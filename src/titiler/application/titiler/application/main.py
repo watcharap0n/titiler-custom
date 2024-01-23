@@ -1,14 +1,18 @@
 """titiler app."""
 
 import logging
+import os
+import time
 
 import jinja2
-from fastapi import Depends, FastAPI, HTTPException, Security
+from fastapi import Depends, FastAPI, HTTPException, Security, status
 from fastapi.security.api_key import APIKeyQuery
 from rio_tiler.io import STACReader
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
-from starlette.responses import HTMLResponse
+from starlette.responses import HTMLResponse, RedirectResponse
+from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 from starlette_cramjam.middleware import CompressionMiddleware
 
@@ -35,16 +39,19 @@ from titiler.extensions import (
 )
 from titiler.mosaic.errors import MOSAIC_STATUS_CODES
 from titiler.mosaic.factory import MosaicTilerFactory
+# from titiler.mosaic_custom.router import mosaic as mosaic_custom
 
-logging.getLogger("botocore.credentials").disabled = True
-logging.getLogger("botocore.utils").disabled = True
-logging.getLogger("rio-tiler").setLevel(logging.ERROR)
+
+# Default logging level is WARNING, so if we want to see anything we need to
+# logging.getLogger("botocore.credentials").disabled = True
+# logging.getLogger("botocore.utils").disabled = True
+# logging.getLogger("rio-tiler").setLevel(logging.ERROR)
+
 
 jinja2_env = jinja2.Environment(
     loader=jinja2.ChoiceLoader([jinja2.PackageLoader(__package__, "templates")])
 )
 templates = Jinja2Templates(env=jinja2_env)
-
 
 api_settings = ApiSettings()
 
@@ -93,6 +100,31 @@ app = FastAPI(
 )
 
 ###############################################################################
+
+
+###############################################################################
+# Setup logger
+script_dir = os.path.dirname(__file__)
+st_abs_file_path = os.path.join(script_dir, "static/")
+os.makedirs(st_abs_file_path, exist_ok=True)
+app.mount("/static", StaticFiles(directory=st_abs_file_path), name="static")
+
+# Define the log file path
+root_dir = os.path.dirname(__file__)
+static_dir = os.path.join(root_dir, 'static')
+log_dir = os.path.join(static_dir, 'logs')
+os.makedirs(log_dir, exist_ok=True)
+
+log = logging.getLogger("uvicorn-titiler")
+log.setLevel(logging.INFO)
+handler = logging.FileHandler(f'{st_abs_file_path}/logs/logs_event.txt')
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter(
+    "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+handler.setFormatter(formatter)
+log.addHandler(handler)
+
+###############################################################################
 # Simple Dataset endpoints (e.g Cloud Optimized GeoTIFF)
 if not api_settings.disable_cog:
     cog = TilerFactory(
@@ -109,7 +141,6 @@ if not api_settings.disable_cog:
         prefix="/cog",
         tags=["Cloud Optimized GeoTIFF"],
     )
-
 
 ###############################################################################
 # STAC endpoints
@@ -137,6 +168,8 @@ if not api_settings.disable_mosaic:
         prefix="/mosaicjson",
         tags=["MosaicJSON"],
     )
+    app.include_router(mosaic.router)
+    # app.include_router(mosaic_custom.router)
 
 ###############################################################################
 # TileMatrixSets endpoints
@@ -154,10 +187,33 @@ app.include_router(
     tags=["Algorithms"],
 )
 
+
 add_exception_handlers(app, DEFAULT_STATUS_CODES)
 add_exception_handlers(app, MOSAIC_STATUS_CODES)
 
+
 # Set all CORS enabled origins
+class LogMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware class for logging HTTP requests and responses.
+    """
+
+    async def dispatch(self, request, call_next):
+        start_time = time.time()
+        log.info(
+            f"Request: {request.method} {request.url} from {request.client.host}")
+        response = await call_next(request)
+        log.info(f"Response: {response.status_code}")
+        process_time = time.time() - start_time
+        process_time = "{:2f}".format(process_time)
+        response.headers["X-Process-Time"] = str(process_time)
+        pass_url = str(request.url)
+        sentence = "../../" or "..%2F..%2F" or "/../../"
+        if sentence in pass_url:
+            return RedirectResponse(status_code=status.HTTP_303_SEE_OTHER, url="/404")
+        return response
+
+
 if api_settings.cors_origins:
     app.add_middleware(
         CORSMiddleware,
@@ -167,6 +223,7 @@ if api_settings.cors_origins:
         allow_headers=["*"],
     )
 
+app.add_middleware(LogMiddleware)
 app.add_middleware(
     CompressionMiddleware,
     minimum_size=0,

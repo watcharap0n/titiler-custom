@@ -9,8 +9,10 @@ __pycache__/
 *$py.class
 
 # C extensions
+*.pem
 *.so
-
+*.idea
+*logs_event.txt
 # Distribution / packaging
 .Python
 env/

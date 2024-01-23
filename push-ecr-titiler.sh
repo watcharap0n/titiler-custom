@@ -1,0 +1,11 @@
+export AWS_ACCESS_KEY_ID="ASIA3Z37CI6IV2WIAVDD"
+export AWS_SECRET_ACCESS_KEY="0G61iBe9ld1VvOOZgzXBoywQ3U77nB9Sc3FCcgcA"
+export AWS_SESSION_TOKEN="IQoJb3JpZ2luX2VjEJv//////////wEaDmFwLXNvdXRoZWFzdC0xIkcwRQIhALW/cSQTjhztC0ceXdxjfiZksPvRmrT6GhlGCHxqVQ05AiB1ErfZKt5NsNc4SbhjGoAGeuf/upBGZN90+NCrQO+UoyqRAwhUEAEaDDgxMTQ3ODQzNTcyOSIMhKE7Yo8rppNUYoqtKu4CwX6QuDTK4EchwF/OlDcj5QgZbyqK0QiiRgyF+w9h75kUHDsjWSgczQ9Bzpl4R4E3DE0f+Dy+nEkCslUvMKlKVZCIlohvIoDl0iZnV6wB7/xGaf7qJ9XNyosZ+H3FuJsKy5UcSnRNJ4zaZSPqdPkWoQ5BqGDb+15Jv1lTpOUd9cXJOTsGFzdaCrWOrbUFeQoArsjCFPbD/j924FWliE1QN4pY1jo/cCgWgb7hBUxy1ZaST9D08okAFyIFBxcRo0aF+GE5q/YmIW92d5VdoohhmQqYr+Eth2TSzJveW4sa410zRz2eYc6Web3beQsEHrPqKjW7OQbvDRKa2OadBUs7wywl/CUvgfrOjndCr39P/YpRivcVnOGaAUv6mjOTNXMG3SzNA4W/nhdH1gR63+/PrjZ3Rmr7UEC6cBbRQ0m4DjcQ8HoXLa8GAJeojiKrMmV9Ju+lO9fF2buqJBSvFNwvGEx9sUdcA1reCwgugup6MMjQvK0GOqYBrvD3gF5/Ks15rDOMBkgPNuVF9Rjcy/NHWjhznyXcl5Ppxuio4tQ6s//h1/x65uFt9CP/cWN0c/oSxDsUc04SsmNxyuHqJjxjxomM2zh888+eaFcD745+vBhyK7cxHE/MzRJHXtb/9UTaLvvkfZuAyWOrbP0x8/IWqvfPC9JIqERoU5TVJl/f2Akzea2xl/0bregq+hEI6I6X5Q8VhaheGessYAyWRA=="
+
+aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin 811478435729.dkr.ecr.ap-southeast-1.amazonaws.com
+
+sudo docker buildx build -f dockerfiles/Dockerfile.uvicorn --platform linux/amd64 -t titiler-server:latest .
+
+docker tag titiler-server:latest 811478435729.dkr.ecr.ap-southeast-1.amazonaws.com/titiler-server:latest
+
+docker push 811478435729.dkr.ecr.ap-southeast-1.amazonaws.com/titiler-server:latest
