@@ -4,10 +4,9 @@ app/main.py
 
 """
 
+from fastapi import FastAPI
 from titiler.core.errors import DEFAULT_STATUS_CODES, add_exception_handlers
 from titiler.mosaic.errors import MOSAIC_STATUS_CODES
-
-from fastapi import FastAPI
 
 from .router import mosaic
 
@@ -22,3 +21,10 @@ app = FastAPI(
 app.include_router(mosaic.router)
 add_exception_handlers(app, DEFAULT_STATUS_CODES)
 add_exception_handlers(app, MOSAIC_STATUS_CODES)
+
+
+# Health Check
+@app.get("/healthz", tags=["Health Check"])
+def ping():
+    """Health check."""
+    return {"ping": "pong!"}
