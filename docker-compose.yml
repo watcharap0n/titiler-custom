@@ -48,6 +48,7 @@ services:
   titiler_custom:
     container_name: titiler_custom
     platform: linux/amd64
+    restart: unless-stopped
     build:
       context: .
       dockerfile: dockerfiles/Dockerfile.custom
