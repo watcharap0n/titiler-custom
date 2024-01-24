@@ -18,4 +18,4 @@ RUN python -m pip install -U pip
 RUN python -m pip install /src/titiler/core /src/titiler/extensions["cogeo,stac"] /src/titiler/mosaic /src/titiler/application["server"] --no-cache-dir --upgrade
 WORKDIR /src/
 
-CMD uvicorn titiler.mosaic_custom.titiler.main:app --proxy-headers --host 0.0.0.0 --port 80
+CMD uvicorn titiler.mosaic_custom.titiler.main:app --proxy-headers --host 0.0.0.0 --port 8001
